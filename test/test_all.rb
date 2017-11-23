@@ -11,8 +11,7 @@ require 'sskatex'
 
 class SsKaTeXTest < Minitest::Test
   def setup
-    @tex2html = SsKaTeX.new
-    @tex2html.logger = lambda do |level, &block|
+    @tex2html = SsKaTeX.new do |level, &block|
 #      warn(block.call) if level == :verbose
     end
   end

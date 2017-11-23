@@ -159,11 +159,10 @@ class SsKaTeX
     end
   end
 
-  # This can be used for monitoring or debugging. When set to a
+  # This can be used for monitoring or debugging. Must be either +nil+ or a
   #     proc {|level, &block| ...}
-  # the #logger will be used internally as
-  #     logger.call(level) {msg}
-  # with the log message constructed in the given block. _level_ is one of:
+  # where the _block_ is used for on-demand construction of the log message.
+  # _level_ is one of:
   #
   # +:verbose+::
   #   For information about the effective engine configuration.
@@ -172,10 +171,29 @@ class SsKaTeX
   #   For the Javascript expressions used when converting TeX.
   #   Issued once per TeX snippet.
   #
-  # For example, to ignore +:debug+ yet trace +:verbose+ messages, set
-  #     .logger = lambda {|level, &block| warn(block.call) if level == :verbose}
-  # The default after construction is to log nothing.
+  # For example, to trace +:verbose+ but not +:debug+ messages, set #logger to
+  #     lambda {|level, &block| warn(block.call) if level == :verbose}
+  # If #logger is +nil+, no logging will be done.
   attr_accessor :logger
+
+  protected
+
+  # Generic shortcut for logging
+  def log(logger = @logger, level, &msg)
+    logger.call(level, &msg) if logger
+  end
+
+  # Shortcut for logging debug-level messages
+  def logd(logger = @logger, &msg)
+    log(logger, :debug, &msg)
+  end
+
+  # Shortcut for logging verbose-level messages
+  def logv(logger = @logger, &msg)
+    log(logger, :verbose, &msg)
+  end
+
+  public
 
   # A dictionary with the used configuration options.
   # The resulting effective option values can be read from the same-named
@@ -203,44 +221,45 @@ class SsKaTeX
     @config = cfg
   end
 
-  # Create a new instance configured with keyword arguments. Disable logging.
-  # The keyword arguments can be retrieved as dictionary #config, and the
-  # resulting effective option values can be read from the same-named attributes
-  # #katex_js, #katex_opts, #js_dir, #js_libs, #js_run.
-  def initialize(cfg = {})
-    @logger = lambda {|level, &block|}
+  # Create a new instance configured with keyword arguments and optional logger.
+  # The arguments are just stored by reference; no further action is taken until
+  # parts of the configuration are actually needed in other method calls.
+  # The dictionary with the keyword arguments can be accessed as #config.
+  # The logger can be accessed as #logger.
+  def initialize(cfg = {}, &logger)
+    @logger = logger
     self.config = cfg
   end
 
-  # A symbol for the Javascript engine to be used. Recognized identifiers
-  # include: +:RubyRacer+, +:RubyRhino+, +:Duktape+, +:MiniRacer+, +:Node+,
+  # Identifies the Javascript engine to be used. Defined identifiers include:
+  # +:RubyRacer+, +:RubyRhino+, +:Duktape+, +:MiniRacer+, +:Node+,
   # +:JavaScriptCore+, +:Spidermonkey+, +:JScript+, +:V8+, and +:Disabled+;
   # that last one would raise an error on first run (by #js_context).
   # Which engines are actually available depends on your installation.
   #
-  # #js_run is determined on demand as follows and then cached for reuse.
-  # If #config[ +:js_run+ ] is not defined, the contents of the environment
-  # variable +EXECJS_RUNTIME+ will be considered instead; and if that is not
-  # defined, an automatic choice will be made. For more information, set the
-  # #logger to show +:verbose+ messages and consult the documentation of
+  # #js_run is determined on first demand as follows, then logged and cached
+  # for reuse. If #config[ +:js_run+ ] is not defined, the contents of the
+  # environment variable +EXECJS_RUNTIME+ will be considered instead; and if
+  # that is not defined, an automatic choice will be made. For more information,
+  # use the logger to show +:verbose+ messages and consult the documentation of
   # ExecJS[https://github.com/rails/execjs#execjs].
-  def js_run
+  # If a block is given, it is used instead of the logger set with #logger=.
+  def js_run(&logger)
     @js_run ||= begin
-      log = lambda {|&block| @logger.call(:verbose, &block)}
-
-      log.call {"Available JS runtimes: #{Utils.js_runtimes.join(', ')}"}
+      logger ||= @logger
+      logv(logger) {"Available JS runtimes: #{Utils.js_runtimes.join(', ')}"}
       jsrun = (@config[:js_run] ||
                ENV_EXECJS_RUNTIME ||
                Utils::JSRUN_TOSYM[ExecJS::Runtimes.best_available] ||
                'Disabled').to_s.to_sym
-      log.call {"Selected JS runtime: #{jsrun}"}
+      logv(logger) {"Selected JS runtime: #{jsrun}"}
       jsrun
     end
   end
 
-  # The +ExecJS::Runtime+ subclass to be used, corresponding to #js_run.
-  def js_runtime
-    @js_runtime ||= Utils::JSRUN_FROMSYM[js_run]
+  # The +ExecJS::Runtime+ subclass corresponding to #js_run(&logger).
+  def js_runtime(&logger)
+    @js_runtime ||= Utils::JSRUN_FROMSYM[js_run(&logger)]
   end
 
   # The path to a directory with Javascript helper files as specified by
@@ -304,51 +323,48 @@ class SsKaTeX
 
   # The concatenation of the contents of the files in #js_libs, in #katex_js,
   # and a JS variable definition for #katex_opts, each item followed by a
-  # newline. Created at first use. Can be used to validate JS contents if used
-  # before #js_context.
-  def js_source
+  # newline. Created at first use, with filenames and #katex_opts logged.
+  # Can be used to validate JS contents before a #js_context is created.
+  # If a block is given, it is used instead of the logger set with #logger=.
+  def js_source(&logger)
     @js_source ||= begin
-      log = lambda {|&block| @logger.call(:verbose, &block)}
+      logger ||= @logger
 
-      # Concatenate sources
       js = ''
       js_libs.each do |libfile|
         absfile = File.expand_path(libfile, js_dir)
-        log.call {"Loading JS file: #{absfile}"}
+        logv(logger) {"Loading JS file: #{absfile}"}
         js << IO.read(absfile, external_encoding: Encoding::UTF_8) << "\n"
       end
-      log.call {"Loading KaTeX JS file: #{katex_js}"}
+      logv(logger) {"Loading KaTeX JS file: #{katex_js}"}
       js << IO.read(katex_js, external_encoding: Encoding::UTF_8) << "\n"
 
-      # Initialize JS variable katex_opts
       js_katex_opts = "var katex_opts = #{katex_opts.to_json}"
-      log.call {"JS eval: #{js_katex_opts}"}
+      logv(logger) {"JS eval: #{js_katex_opts}"}
       js << js_katex_opts << "\n"
     end
   end
 
-  # The JS engine context resulting from compilation of #js_source by the
-  # #js_runtime selected with #js_run. Created at first use e.g. by #call.
-  def js_context
-    @js_context ||= js_runtime.compile(js_source)
+  # The JS engine context obtained by letting the #js_runtime(&logger) compile
+  # the #js_source(&logger). Created at first use e.g. by #call.
+  def js_context(&logger)
+    @js_context ||= js_runtime(&logger).compile(js_source(&logger))
   end
 
-  # Given a TeX math fragment _tex_ as well as a boolean _display_mode_ (true
-  # for block, false for inline), run the JS engine (using #js_context) and let
-  # KaTeX compile the math fragment. Return the resulting HTML string.
+  # Given a TeX math fragment _tex_ and a boolean _display_mode_ (+true+ for
+  # block, default +false+ for inline), run the JS engine (using #js_context)
+  # and let KaTeX compile the math fragment. Return the resulting HTML string.
   # Can raise errors if something in the process fails.
-  def call(tex, display_mode)
-    ctx = js_context
+  # If a block is given, it is used instead of the logger set with #logger=.
+  def call(tex, display_mode = false, &logger)
+    logger ||= @logger
+    ctx = js_context(&logger)
     js = "tex_to_html(#{Utils.js_quote(tex)}, #{display_mode.to_json}, katex_opts)"
-    @logger.call(:debug) {"JS eval: #{js}"}
+    logd(logger) {"JS eval: #{js}"}
     ans = ctx.eval(js)
-    raise (<<MSG) unless ans && ans.start_with?('<') && ans.end_with?('>')
-KaTeX conversion failed!
-Input:
-#{tex}
-Output:
-#{ans}
-MSG
+    unless ans && ans.start_with?('<') && ans.end_with?('>')
+      raise "KaTeX conversion failed!\nInput:\n#{tex}\nOutput:\n#{ans}"
+    end
     ans
   end
 end
