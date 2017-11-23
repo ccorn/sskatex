@@ -8,7 +8,7 @@
 
 Gem::Specification.new do |s|
   s.name        = 'sskatex'
-  s.version     = '0.9.23'
+  s.version     = '0.9.24'
   s.date        = '2017-11-23'
   s.summary     = "Server-side KaTeX for Ruby"
   s.description = <<DESC
@@ -36,7 +36,7 @@ DESC
   s.license     = 'MIT'
   s.add_runtime_dependency 'execjs', '~> 2.7'
   s.add_development_dependency 'duktape', '~> 1.6', '>= 1.6.1'
-  s.required_ruby_version = '>= 2.0'
+  s.required_ruby_version = '>= 2.1'
   s.requirements << "Javascript engine supported by the ExecJS gem"
   s.rdoc_options << '-a'
 end
