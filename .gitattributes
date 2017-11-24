@@ -1,0 +1,3 @@
+data/* linguist-vendored
+test/* linguist-vendored
+test/*.rb linguist-vendored=false
