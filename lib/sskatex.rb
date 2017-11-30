@@ -85,6 +85,29 @@ class SsKaTeX
   # Relative paths are interpreted relative to #js_dir.
   DEFAULT_JS_LIBS = ['escape_nonascii_html.js', 'tex_to_html.js']
 
+  # A logger that outputs every message via +warn+
+  DEBUG_LOGGER = lambda {|level, &expr| warn expr.call}
+  private_constant :DEBUG_LOGGER
+
+  # A logger that outputs only verbose-level messages via +warn+
+  VERBOSE_LOGGER = lambda {|level, &expr| warn expr.call if level == :verbose}
+  private_constant :VERBOSE_LOGGER
+
+  # A dictionary with simple loggers
+  LOGGERS = {debug: DEBUG_LOGGER, 'debug' => DEBUG_LOGGER,
+             verbose: VERBOSE_LOGGER, 'verbose' => VERBOSE_LOGGER}
+  private_constant :LOGGERS
+
+  # Given a desired log _level_, this returns an object useful for #logger.
+  # That logger object simply outputs messages via +warn+.
+  # If _level_ is +:debug+, all messages are output.
+  # If _level_ is +:verbose+, only verbose-level messages are output.
+  # _level_ can be given as a symbol or as its JSON-equivalent string.
+  # If _level_ is anything else, +nil+ will be returned, thus disabling logging.
+  def self.warn_logger(level = :verbose)
+    LOGGERS[level]
+  end
+
   # This is a module with miscellaneous utility functions needed by SsKaTeX.
   module Utils
     # Dictionary for escape sequences used in Javascript string literals
@@ -173,6 +196,8 @@ class SsKaTeX
   #
   # For example, to trace +:verbose+ but not +:debug+ messages, set #logger to
   #     lambda {|level, &block| warn(block.call) if level == :verbose}
+  # or, equivalently, to the output of ::warn_logger.
+  #
   # If #logger is +nil+, no logging will be done.
   attr_accessor :logger
 
