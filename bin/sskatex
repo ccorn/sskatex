@@ -78,7 +78,7 @@ if ARGV.size > 2
   exit 2
 end
 
-cfg_opts = JSON.parse(YAML.load(config_file, safe: true).to_json,
+cfg_opts = JSON.parse(YAML.load_file(config_file, safe: true).to_json,
                       symbolize_names: true) if config_file
 options = cfg_opts.merge(cmd_opts, &merge_dicts)
 loglevel = options[:debug] ? :debug : options[:verbose] ? :verbose : nil
