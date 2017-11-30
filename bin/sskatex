@@ -1,0 +1,100 @@
+#! /usr/bin/env ruby
+require 'json'
+require 'safe_yaml'
+require 'optparse'
+require 'sskatex'
+
+me = File.basename(__FILE__)
+
+# Useful as Hash.merge argument
+merge_dicts = lambda do |key, left_val, right_val|
+  if left_val.class == Hash and right_val.class == Hash
+    left_val.merge(right_val, &merge_dicts)
+  else
+    right_val
+  end
+end
+
+cmd_opts = {}
+cfg_opts = {}
+config_file = nil
+display_mode = nil
+OptionParser.new do |opts|
+  opts.banner =  <<USAGE
+Usage: #{me} [options] [INFILE [OUTFILE]]
+
+Processes a TeX math fragment from INFILE (default stdin) and
+writes corresponding HTML+MathML to OUTFILE (default stdout).
+Needs katex.min.js and a Javascript engine to do that.
+
+Options:
+USAGE
+  opts.on('-C CONFIG_FILE', '--config_file=CONFIG_FILE',
+          'Specify path to YAML configuration file') do |cf|
+    config_file = cf
+  end
+  opts.on('-D', '--[no-]display',
+          'format math in display style') do |dm|
+    display_mode = dm
+  end
+  opts.on('-J KATEX_JS', '--katex_js=KATEX_JS',
+          'Specify path to katex.js') do |katex_js|
+    cmd_opts[:katex_js] = katex_js
+  end
+  opts.on('-K JSON', '--katex_opts=JSON',
+          'Specify KaTeX options') do |katex_opts|
+    cmd_opts[:katex_opts] = JSON.parse(katex_opts, symbolize_names: true)
+  end
+  opts.on('-L JS_DIR', '--js_dir=JS_DIR',
+          'Specify dir with JS helper files') do |js_dir|
+    cmd_opts[:js_dir] = js_dir
+  end
+  opts.on('-l JS_LIB,...', '--js_libs=JS_LIB,...', Array,
+          'Specify JS helper files, relative to JS_DIR') do |js_libs|
+    cmd_opts[:js_libs] = js_libs
+  end
+  opts.on('-R JS_RUN', '--js_run=JS_RUN',
+          'Specify JS engine to use (-v lists choices)') do |js_run|
+    cmd_opts[:js_run] = js_run
+  end
+  opts.on('-d', '--[no-]debug',
+          'Log JS engine config and usage to stderr') do |d|
+    cmd_opts[:debug] = d
+  end
+  opts.on('-v', '--[no-]verbose',
+          'Log JS engine configuration to stderr') do |v|
+    cmd_opts[:verbose] = v
+  end
+  opts.on("-h", "--help", "Prints this help and exits") do |h|
+    if h
+      puts opts
+      exit
+    end
+  end
+end.parse!
+
+if ARGV.size > 2
+  warn opts
+  exit 2
+end
+
+cfg_opts = JSON.parse(YAML.load(config_file, safe: true).to_json,
+                      symbolize_names: true) if config_file
+options = cfg_opts.merge(cmd_opts, &merge_dicts)
+loglevel = options[:debug] ? :debug : options[:verbose] ? :verbose : nil
+display_mode = !!display_mode
+
+conv = SsKaTeX.new(options, &SsKaTeX.warn_logger(loglevel))
+tex = if ARGV.size == 0
+  $stdin.set_encoding Encoding::UTF_8
+  $stdin.read
+else
+  IO.read(ARGV.shift, encoding: Encoding::UTF_8)
+end.chomp
+html = conv.call(tex, display_mode) + "\n"
+if ARGV.size == 0
+  $stdout.set_encoding Encoding::UTF_8
+  $stdout.write html
+else
+  IO.write(ARGV.shift, html, encoding: Encoding::UTF_8)
+end

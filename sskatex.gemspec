@@ -8,8 +8,8 @@
 
 Gem::Specification.new do |s|
   s.name        = 'sskatex'
-  s.version     = '0.9.24'
-  s.date        = '2017-11-23'
+  s.version     = '0.9.30'
+  s.date        = '2017-11-30'
   s.summary     = "Server-side KaTeX for Ruby"
   s.description = <<DESC
 This is a TeX-to-HTML+MathML+CSS converter class using the Javascript-based
@@ -28,10 +28,6 @@ For that reason, the configuration must not be left to untrusted users.
 DESC
   s.author      = "Christian Cornelssen"
   s.email       = 'ccorn@1tein.de'
-  s.files       = Dir["COPYING", "README.md", "lib/sskatex.rb",
-                      "test/test_all.rb",
-                      "test/{block,span}/*.html", "test/tex/*.tex",
-                      "data/sskatex/js/*.js"]
   s.homepage    = 'https://github.com/ccorn/sskatex'
   s.license     = 'MIT'
   s.add_runtime_dependency 'execjs', '~> 2.7'
@@ -39,4 +35,11 @@ DESC
   s.required_ruby_version = '>= 2.1'
   s.requirements << "Javascript engine supported by the ExecJS gem"
   s.rdoc_options << '-a'
+  s.files       = Dir["COPYING", "README.md",
+                      "bin/sskatex",
+                      "lib/sskatex.rb",
+                      "test/test_all.rb",
+                      "test/{block,span}/*.html", "test/tex/*.tex",
+                      "data/sskatex/js/*.js"]
+  s.executables << 'sskatex'
 end
