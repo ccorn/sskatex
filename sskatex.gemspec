@@ -34,6 +34,7 @@ DESC
   s.add_development_dependency 'duktape', '~> 1.6', '>= 1.6.1'
   s.required_ruby_version = '>= 2.1'
   s.requirements << "Javascript engine supported by the ExecJS gem"
+  s.requirements << "Some KaTeX release"
   s.rdoc_options << '-a'
   s.files       = Dir["COPYING", "README.md",
                       "bin/sskatex",
