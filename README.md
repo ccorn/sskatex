@@ -49,9 +49,18 @@ implies that execution of arbitrary Javascript code is possible. Specifically,
 options with `js` in their names should be accepted from trusted sources only.
 Applications using SsKaTeX need to check this.
 
+Also included is a command-line interface to the SsKaTeX gem: A script called
+`sskatex`. It demonstrates basic functionality and options of the SsKaTeX gem.
+It only renders one TeX math expression per invocation; try `sskatex -h` for
+more information. If you want to see the SsKaTeX gem used more efficiently,
+look at [kramdown] v1.16 or later which can use SsKaTeX as a math engine. But
+do *not* make SsKaTeX available where kramdown is exposed to untrusted users;
+that would be insecure unless that process is sandboxed.
+
 [duktape.rb]: https://github.com/judofyr/duktape.rb#duktaperb
 [ExecJS]: https://github.com/rails/execjs#execjs
 [KaTeX]: https://khan.github.io/KaTeX/
+[kramdown]: https://github.com/gettalong/kramdown
 [mathjax-node-cli]: https://github.com/mathjax/mathjax-node-cli
 [Node.js]: https://nodejs.org/
 [therubyracer]: https://github.com/cowboyd/therubyracer#therubyracer
