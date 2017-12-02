@@ -36,7 +36,7 @@ DESC
   s.requirements << "Javascript engine supported by the ExecJS gem"
   s.requirements << "Some KaTeX release"
   s.rdoc_options << '-a'
-  s.files       = Dir["COPYING", "README.md",
+  s.files       = Dir["LICENSE.txt", "README.md",
                       "bin/sskatex",
                       "lib/sskatex.rb",
                       "test/test_all.rb",

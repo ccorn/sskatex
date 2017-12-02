@@ -1,7 +1,6 @@
-SsKaTeX - Server-side KaTeX for Ruby
-(not including KaTeX itself)
-MIT License
-Copyright (C) 2017 Christian Cornelssen <ccorn@1tein.de>
+The MIT License (MIT)
+
+Copyright (C) 2017 Christian Cornelssen <ccorn@1tein.de> on SsKaTeX
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
