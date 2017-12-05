@@ -74,7 +74,7 @@ USAGE
 end.parse!
 
 if ARGV.size > 2
-  warn opts
+  warn "#{me}: Too many non-option arguments. Try -h for help."
   exit 2
 end
 
