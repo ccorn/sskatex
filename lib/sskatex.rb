@@ -58,15 +58,9 @@ require 'json'
 # Applications using SsKaTeX need to check this.
 class SsKaTeX
 
-  # Original value of the +EXECJS_RUNTIME+ environment variable, if any.
-  # Used when deferring ExecJS's engine auto-selection.
-  ENV_EXECJS_RUNTIME = ENV['EXECJS_RUNTIME']
-  begin
-    ::ENV['EXECJS_RUNTIME'] = 'Disabled'  # Defer automatic JS engine selection
-    require 'execjs'
-  ensure
-    ::ENV['EXECJS_RUNTIME'] = ENV_EXECJS_RUNTIME
-  end
+  # Defer ExecJS's engine auto-selection (avoided later unless necessary).
+  require 'execjs/module'
+  require 'execjs/runtimes'
 
   # Root directory for auxiliary files of this gem
   DATADIR = File.expand_path(File.join(File.dirname(__FILE__),
@@ -274,7 +268,7 @@ class SsKaTeX
       logger ||= @logger
       logv(logger) {"Available JS runtimes: #{Utils.js_runtimes.join(', ')}"}
       jsrun = (@config[:js_run] ||
-               ENV_EXECJS_RUNTIME ||
+               ENV['EXECJS_RUNTIME'] ||
                Utils::JSRUN_TOSYM[ExecJS::Runtimes.best_available] ||
                'Disabled').to_s.to_sym
       logv(logger) {"Selected JS runtime: #{jsrun}"}
