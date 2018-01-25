@@ -8,8 +8,8 @@
 
 Gem::Specification.new do |s|
   s.name        = 'sskatex'
-  s.version     = '0.9.36'
-  s.date        = '2017-12-05'
+  s.version     = '0.9.37'
+  s.date        = '2018-01-25'
   s.summary     = "Server-side KaTeX for Ruby"
   s.description = <<DESC
 This is a TeX-to-HTML+MathML+CSS converter class using the Javascript-based
