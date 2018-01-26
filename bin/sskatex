@@ -1,6 +1,6 @@
 #! /usr/bin/env ruby
 require 'json'
-require 'safe_yaml'
+#require 'safe_yaml'
 require 'optparse'
 require 'sskatex'
 
