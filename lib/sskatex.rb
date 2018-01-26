@@ -152,7 +152,11 @@ class SsKaTeX
       # This should really be provided by +ExecJS::Runtimes+:
       # A list of available JS engines, as symbols, in the order of preference.
       def js_runtimes
-        ExecJS::Runtimes.runtimes.select(&:available?).map(&JSRUN_TOSYM)
+        # Ruby 2.3+:
+        # ExecJS::Runtimes.runtimes.select(&:available?).map(&JSRUN_TOSYM)
+        ExecJS::Runtimes.runtimes.select(&:available?).map do |runtime|
+          JSRUN_TOSYM[runtime]
+        end
       end
 
       # Configuration dicts may contain keys in both string and symbol form.
