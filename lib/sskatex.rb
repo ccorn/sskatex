@@ -282,7 +282,9 @@ class SsKaTeX
 
   # The +ExecJS::Runtime+ subclass corresponding to #js_run(&logger).
   def js_runtime(&logger)
-    @js_runtime ||= Utils::JSRUN_FROMSYM[js_run(&logger)]
+    @js_runtime ||= Utils::JSRUN_FROMSYM[js_run(&logger)].tap do |runtime|
+      runtime.available?        # trigger necessary initializations
+    end
   end
 
   # The path to a directory with Javascript helper files as specified by
